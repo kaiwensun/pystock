@@ -1,0 +1,5 @@
+*.pyc
+*.pyo
+.venv
+.vscode
+local_settings.py

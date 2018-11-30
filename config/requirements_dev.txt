@@ -1,0 +1,3 @@
+# required in only development environment
+autopep8==1.4
+pylint==2.1.1
