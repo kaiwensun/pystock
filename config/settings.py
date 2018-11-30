@@ -3,6 +3,10 @@ _NOT_SET_ = "_NOT_SET_"
 
 # These settings can be overridden by local_settings.py
 
+ALLOWED_SYMBOLS = []
+USER_EMAIL = "USER_EMAIL"
+UESR_PASSWORD = "USER_PASSWORD"
+
 thismodule = sys.modules[__name__]
 try:
     import local_settings
