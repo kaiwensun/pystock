@@ -3,7 +3,7 @@ import robin_stocks
 from config import settings
 from app.stock import infomation
 
-login = robin_stocks.login(settings.USER_EMAIL, settings.UESR_PASSWORD)
+login = robin_stocks.login(settings.USER_EMAIL, settings.USER_PASSWORD)
 
 
 def run_service():
