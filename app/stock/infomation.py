@@ -110,6 +110,7 @@ def market_open_time(mic):
     is_open = today_market['is_open']
     if not is_open:
         return res
+    res['is_open_today'] = is_open
     start = _parse_market_time(today_market['extended_opens_at'])
     end = _parse_market_time(today_market['extended_closes_at'])
     res['extended_opens_at'] = start
