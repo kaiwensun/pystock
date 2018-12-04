@@ -47,7 +47,7 @@ def get_fundamentals(symbols):
 
 def get_instruments(symbols):
     instrument_data = robin_stocks.stocks.get_instruments_by_symbols(symbols)
-    keys = ['tradability', 'rhs_tradability', "simple_name", "id"]
+    keys = ['tradability', 'rhs_tradability', "simple_name", "id", "symbol"]
     renames = {"id": "stock_id"}
     return _extract_obj(instrument_data, keys, renames)
 
@@ -100,7 +100,7 @@ def market_open_time(mic):
         'extended_opens_at': None,
         'extended_closes_at': None,
         'utcnow': utcnow,
-        'utcnow - open': None,
+        'utcnow - start': None,
         'end - utcnow': None
     }
     url = "https://api.robinhood.com/markets/{mic}/".format(mic=mic)
@@ -115,9 +115,9 @@ def market_open_time(mic):
     end = _parse_market_time(today_market['extended_closes_at'])
     res['extended_opens_at'] = start
     res['extended_closes_at'] = end
-    res['utcnow - open'] = (utcnow - start).total_seconds()
+    res['utcnow - start'] = (utcnow - start).total_seconds()
     res['end - utcnow'] = (end - utcnow).total_seconds()
-    if res['utcnow - open'] > 0 and res['end - utcnow'] > 0:
+    if res['utcnow - start'] > 0 and res['end - utcnow'] > 0:
         res['is_open_now'] = True
     return res
 
@@ -138,8 +138,6 @@ def build_holdings():
     timestamp = get_timestamp()
     holdings = [{'timestamp': timestamp} for _ in symbols]
     for i in range(len(holdings)):
-        holdings[i]['symbol'] = symbols[i]
-        datetime.datetime.now(tz=pytz.utc)
         for data_lst in [fundamentals, instruments, quotes, positions]:
             holdings[i].update(data_lst[i])
     return holdings

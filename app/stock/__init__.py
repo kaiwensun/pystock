@@ -31,7 +31,7 @@ def run_service():
             holdings = infomation.build_holdings()
         else:
             logger("sleep when market has not opened yet")
-            time.sleep(- market_info['utcnow - start'] - 60 * 3)
+            time.sleep(- int(market_info['utcnow - start']) - 60 * 3)
         if holdings is not None:
             logger(holdings)
         time.sleep(settings.OPEN_HOUR_SLEEP)
@@ -46,11 +46,11 @@ def logger(info):
     hour = timestamp.hour
     if _LAST_FILE_HOUR_ != hour:
         _LAST_FILE_HOUR_ = hour
-        time_format = '%Y-%m-%dT%H%M%Sz%Z'
+        time_format = '%Y-%m-%dT%H-%M-%S-%Z'
         timestamp.strftime(time_format)
-        _LOG_FILE_NAME_ = os.path.join(
-            "logs", "{}.log".format(
-                timestamp.strftime(time_format)))
+        _LOG_FILE_NAME_ = os.path.join("logs", str(timestamp.year),
+            str(timestamp.month), str(timestamp.day),
+            "{}.log".format(timestamp.strftime(time_format)))
         if not os.path.exists(os.path.dirname(_LOG_FILE_NAME_)):
             os.makedirs(os.path.dirname(_LOG_FILE_NAME_))
     logtext = pprint.pformat(info, indent=4)
