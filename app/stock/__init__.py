@@ -2,13 +2,12 @@ import robin_stocks
 import time
 
 from config import settings
-from app.stock import infomation
+from app.stock import infomation, analysis, trade
 from app.logger import logger
-
-login = robin_stocks.login(settings.USER_EMAIL, settings.USER_PASSWORD)
 
 
 def run_service():
+    robin_stocks.login(settings.USER_EMAIL, settings.USER_PASSWORD)
     while True:
         holdings = None
         sleep_time = settings.OPEN_HOUR_SLEEP
@@ -29,5 +28,10 @@ def run_service():
             logger.debug("sleep when market has not opened yet")
             sleep_time = - int(market_info['utcnow - start']) - 60 * 3
         if holdings is not None:
+            for holding in holdings:
+                strategy = analysis.analyze(holding)
+                if strategy:
+                    details = trade.trade(*strategy)
+                    logger.debug(details)
             logger.debug(holdings)
         time.sleep(sleep_time)

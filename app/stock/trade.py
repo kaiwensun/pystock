@@ -21,10 +21,6 @@ class TradeType(enum.Enum):
     sell = 'sell'
 
 
-def _get_int(num):
-    return int(float(num))
-
-
 def trade(holding, action, quantity, price=None, order_type=OrderType.market,
           trigger_type=TriggerType.immediate, stop_price=None,
           extended_hours=False):
@@ -38,16 +34,12 @@ def trade(holding, action, quantity, price=None, order_type=OrderType.market,
     trigger = isinstance(trigger_type, TriggerType) and trigger_type.value
     price = price if price is not None else holding['latest_price']
     stop_price = None if trigger_type == TriggerType.stop else stop_price
-    quantity = _get_int(quantity)
     if action == TradeType.buy:
-        if quantity * price > _get_int(holding['day_trade_buying_power']):
-            quantity = _get_int(
-                _get_int(
-                    holding['day_trade_buying_power']) //
-                price)
+        if quantity * price > holding['day_trade_buying_power']:
+            quantity = holding['day_trade_buying_power'] // price
     elif action == TradeType.sell:
-        available_quantity = _get_int(
-            holding['quantity']) - _get_int(holding['shares_held_for_sells'])
+        available_quantity = \
+            holding['quantity'] - holding['shares_held_for_sells']
         quantity = min(available_quantity, quantity)
     side = isinstance(action, TradeType) and action.value
     params = {
@@ -68,9 +60,9 @@ def trade(holding, action, quantity, price=None, order_type=OrderType.market,
 
     order_url = robin_stocks.urls.orders()
     # This is temporarily used to let mobile app pause pystock trading this
-    # stock. Make a buy limit order with $0.01, then you'll have a
-    # share_held_for_buys almost forever.
-    if _get_int(holding['shares_held_for_buys']) > 0:
+    # stock. Make 10 limit buy orders with $0.01 each, then you'll have a
+    # share_held_for_buys > 9 almost forever.
+    if holding['shares_held_for_buys'] > 9:
         response = "stop trading due to shares_held_for_buys = {}".format(
             holding['shares_held_for_buys'])
     else:
@@ -82,7 +74,7 @@ def trade(holding, action, quantity, price=None, order_type=OrderType.market,
 
     details_str = pprint.pformat(details, indent=4)
     # This is temporarily used to let mobile app pause pystock sending emails
-    if _get_int(holding['shares_held_for_buys']) < 10:
+    if holding['shares_held_for_buys'] > 15:
         email.send_stock_order_email(
             symbol, order_type, quantity, price, details_str)
     return details
