@@ -6,6 +6,10 @@ _NOT_SET_ = "_NOT_SET_"
 ALLOWED_SYMBOLS = []
 USER_EMAIL = "USER_EMAIL"
 USER_PASSWORD = "USER_PASSWORD"
+MAKE_TRADE = False
+OPEN_HOUR_SLEEP = 10
+TIMEZONE = "US/Pacific"
+MARKETS = ["XNAS"]
 
 thismodule = sys.modules[__name__]
 try:

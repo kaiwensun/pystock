@@ -3,3 +3,6 @@
 .venv
 .vscode
 local_settings.py
+app/stock/examples.json
+logs/*
+errors.log
