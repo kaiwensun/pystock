@@ -6,7 +6,8 @@ from config import settings
 
 _NEED_UPDATE = set()
 _MONITORED_STOCKS = {}
-_ACCOUNT_NUMBER = None
+_ACCOUNT_PROFILE = None
+_MEMORY_STORAGE = {}
 
 
 def mark_need_update(symbol):
@@ -65,7 +66,7 @@ def get_quotes(symbols):
 
 
 def get_positions(stock_ids):
-    account_number = get_account_number()
+    account_number = get_account_info(key='account_number')
     url = "https://api.robinhood.com/accounts/{account_number}/positions/{{stock_id}}/".format(  # noqa
         account_number=account_number)
     positions = []
@@ -78,12 +79,14 @@ def get_positions(stock_ids):
     return _extract_obj(positions, keys)
 
 
-def get_account_number():
-    global _ACCOUNT_NUMBER
-    if _ACCOUNT_NUMBER is None:
-        _ACCOUNT_NUMBER = robin_stocks.profiles \
-            .load_account_profile()['account_number']
-    return _ACCOUNT_NUMBER
+def get_account_info(key=None, update=False):
+    global _ACCOUNT_PROFILE
+    if _ACCOUNT_PROFILE is None or update:
+        _ACCOUNT_PROFILE = robin_stocks.profiles.load_account_profile()
+    if key is None:
+        return _ACCOUNT_PROFILE.copy()
+    else:
+        return _ACCOUNT_PROFILE.get(key)
 
 
 def get_timestamp():

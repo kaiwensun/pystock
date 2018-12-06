@@ -3,6 +3,8 @@ from config import settings
 from sendgrid.helpers.mail import Email, Content, Mail
 from app.logger import logger
 
+__all__ = ['send', 'send_stock_order_email']
+
 
 def send(from_email, to_email, subject, content, content_type="text/html"):
     sg = SendGridAPIClient(apikey=settings.SENDGRID_API_KEY)
@@ -16,8 +18,8 @@ def send(from_email, to_email, subject, content, content_type="text/html"):
             content, response.status_code))
 
 
-def send_stock_order_email(symbol, order_type, quantity, price):
-    content = "executing {} shares of {} as a {} order at {}.".format(
+def send_stock_order_email(symbol, order_type, quantity, price, details):
+    subject = "executing {} shares of {} as a {} order at {}.".format(
         order_type, symbol, quantity, price)
     send(settings.SENDGRID_FROM_EMAIL, settings.SENDGRID_TO_EMAIL,
-         content, content)
+         subject, details)
