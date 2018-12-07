@@ -35,8 +35,11 @@ def trade(holding, action, quantity, price=None, order_type=OrderType.market,
     price = price if price is not None else holding['latest_price']
     stop_price = None if trigger_type == TriggerType.stop else stop_price
     if action == TradeType.buy:
-        buying_power = infomation.get_account_info(
-            key='day_trade_buying_power')
+        # buying_power may change due to buying using mobile app.
+        # so update=True
+        margin_balances = infomation.get_account_info(
+            key='margin_balances', update=True)
+        buying_power = margin_balances['day_trade_buying_power']
         if quantity * price > buying_power:
             quantity = buying_power // price
     elif action == TradeType.sell:
