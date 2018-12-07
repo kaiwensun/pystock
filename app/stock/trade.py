@@ -91,7 +91,7 @@ def trade(holding, action, quantity, price=None, order_type=OrderType.market,
     analysis.expires_daily_extremes(holding, action)
     details_str = pprint.pformat(details, indent=4)
     # This is temporarily used to let mobile app pause pystock sending emails
-    if holding['shares_held_for_buys'] > 15:
+    if holding['shares_held_for_buys'] < 15:
         email.send_stock_order_email(
             symbol, order_type, quantity, price, details_str)
     return details
