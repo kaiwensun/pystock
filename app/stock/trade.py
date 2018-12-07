@@ -4,6 +4,7 @@ import pprint
 
 from app.stock import infomation, analysis
 from app.notification import email
+from app.shared import utils
 
 
 class OrderType(enum.Enum):
@@ -39,7 +40,14 @@ def trade(holding, action, quantity, price=None, order_type=OrderType.market,
         # so update=True
         margin_balances = infomation.get_account_info(
             key='margin_balances', update=True)
-        buying_power = margin_balances['day_trade_buying_power']
+        buying_power = utils.get_float(
+            margin_balances['day_trade_buying_power'])
+        if buying_power is None:
+            # This is unexpected
+            email.send_debug_alert(
+                "buying_pwoer is None" +
+                str(margin_balances))
+            quantity = 0
         if quantity * price > buying_power:
             quantity = buying_power // price
     elif action == TradeType.sell:
