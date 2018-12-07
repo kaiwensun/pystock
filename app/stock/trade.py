@@ -2,7 +2,7 @@ import enum
 import robin_stocks
 import pprint
 
-from app.stock import infomation
+from app.stock import infomation, analysis
 from app.notification import email
 
 
@@ -35,12 +35,16 @@ def trade(holding, action, quantity, price=None, order_type=OrderType.market,
     price = price if price is not None else holding['latest_price']
     stop_price = None if trigger_type == TriggerType.stop else stop_price
     if action == TradeType.buy:
-        if quantity * price > holding['day_trade_buying_power']:
-            quantity = holding['day_trade_buying_power'] // price
+        buying_power = infomation.get_account_info(
+            key='day_trade_buying_power')
+        if quantity * price > buying_power:
+            quantity = buying_power // price
     elif action == TradeType.sell:
         available_quantity = \
             holding['quantity'] - holding['shares_held_for_sells']
         quantity = min(available_quantity, quantity)
+    if quantity == 0:
+        return None
     side = isinstance(action, TradeType) and action.value
     params = {
         'account': account,
@@ -67,11 +71,13 @@ def trade(holding, action, quantity, price=None, order_type=OrderType.market,
             holding['shares_held_for_buys'])
     else:
         response = robin_stocks.helper.request_post(order_url, params)
+        # Force update cached account info (eg. available buying power)
+        infomation.get_account_info(update=True)
     details = {
         'request': params,
         'response': response
     }
-
+    analysis.expires_daily_extremes(holding, action)
     details_str = pprint.pformat(details, indent=4)
     # This is temporarily used to let mobile app pause pystock sending emails
     if holding['shares_held_for_buys'] > 15:

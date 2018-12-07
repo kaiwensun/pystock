@@ -8,7 +8,6 @@ from app.shared import utils
 _NEED_UPDATE = set()
 _MONITORED_STOCKS = {}
 _ACCOUNT_PROFILE = None
-_MEMORY_STORAGE = {}
 
 
 def mark_need_update(symbol):
