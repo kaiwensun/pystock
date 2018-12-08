@@ -34,7 +34,8 @@ def run_service():
             for holding in holdings:
                 strategy = analysis.analyze(holding)
                 if strategy:
-                    details = trade.trade(holding, *strategy)
+                    details = trade.trade(
+                        holding, strategy['trade_type'], strategy['shares'])
                     if details is not None:
                         logger.debug(details)
             logger.debug(holdings)

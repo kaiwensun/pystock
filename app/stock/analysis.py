@@ -120,14 +120,24 @@ def analyze(holding):
         if daily_high / settings.ACTION_DIFF_PERCENTAGE > latest_price:
             if available_quantity > 1:
                 # sell all shares to stop loss
-                suggestion = (trade.TradeType.sell, 1)
+                # but keep one to monitor on mobile app
+                shares = max(0, int(holding['quantity'] - 1))
+                suggestion = {
+                    'trade_type': trade.TradeType.sell,
+                    'shares': shares}
     if not suggestion and daily_low is not None and latest_price is not None:
         # TODO: check available buying power before suggesting to buy
         if daily_low * settings.ACTION_DIFF_PERCENTAGE < latest_price:
             max_shares = settings.MAX_MONEY_PER_SYMBOL // latest_price
-            if holding['quantity'] + \
-                    holding['shares_held_for_sells'] + 1 <= max_shares:
-                suggestion = (trade.TradeType.buy, 1)
+            curr_shares = \
+                holding['quantity'] + holding['shares_held_for_sells']
+            shares = max(1, int(curr_shares / 2))
+            if curr_shares + shares > max_shares:
+                shares = max_shares - curr_shares
+            if shares > 0:
+                suggestion = {
+                    'trade_type': trade.TradeType.buy,
+                    'shares': shares}
     if _intend_to_trade(holding, suggestion):
         return suggestion
     return None
