@@ -3,13 +3,23 @@ _NOT_SET_ = "_NOT_SET_"
 
 # These settings can be overridden by local_settings.py
 
+# Stock settings
 ALLOWED_SYMBOLS = []
-USER_EMAIL = "USER_EMAIL"
-USER_PASSWORD = "USER_PASSWORD"
+USER_EMAIL = _NOT_SET_
+USER_PASSWORD = _NOT_SET_
 MAKE_TRADE = False
 OPEN_HOUR_SLEEP = 10
 TIMEZONE = "US/Pacific"
 MARKETS = ["XNAS"]
+
+# Trading policy settings
+MAX_MONEY_PER_SYMBOL = 1000
+ACTION_DIFF_PERCENTAGE = 1.005
+
+# Notification settings
+SENDGRID_API_KEY = _NOT_SET_  # APPLY_ONE_FROM_SENDGRID_WEBSITE
+SENDGRID_FROM_EMAIL = _NOT_SET_
+SENDGRID_TO_EMAIL = _NOT_SET_
 
 thismodule = sys.modules[__name__]
 try:

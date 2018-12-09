@@ -3,17 +3,18 @@ import pytz
 import robin_stocks
 
 from config import settings
+from app.shared import utils
 
 _NEED_UPDATE = set()
 _MONITORED_STOCKS = {}
-_ACCOUNT_NUMBER = None
+_ACCOUNT_PROFILE = None
 
 
 def mark_need_update(symbol):
     _NEED_UPDATE.add(symbol)
 
 
-def _extract_obj(obj_or_lst, keys, rename={}):
+def _extract_obj(obj_or_lst, keys, rename={}, typs={}):
     """
     Extract from dict(s) to get only key-value pairs that we are interested in.
 
@@ -34,6 +35,8 @@ def _extract_obj(obj_or_lst, keys, rename={}):
     for obj in lst:
         extracted = {}
         for key in keys:
+            if typs.get(key):
+                obj[key] = typs.get(key)(obj[key])
             extracted[rename.get(key, key)] = obj[key]
         extracted_lst.append(extracted)
     return extracted_lst[0] if is_dict else extracted_lst
@@ -42,7 +45,10 @@ def _extract_obj(obj_or_lst, keys, rename={}):
 def get_fundamentals(symbols):
     fundamental_data = robin_stocks.stocks.get_fundamentals(symbols)
     keys = ['open', 'high', 'low']
-    return _extract_obj(fundamental_data, keys)
+    typs = {'open': utils.get_float,
+            'high': utils.get_float,
+            'low': utils.get_float}
+    return _extract_obj(fundamental_data, keys, typs=typs)
 
 
 def get_instruments(symbols):
@@ -56,7 +62,15 @@ def get_quotes(symbols):
     quote_data = robin_stocks.stocks.get_quotes(symbols)
     keys = ["ask_price", "ask_size", "bid_price", "bid_size",
             "last_trade_price", "last_extended_hours_trade_price"]
-    extracted_data = _extract_obj(quote_data, keys)
+    typs = {
+        "ask_price": utils.get_float,
+        "ask_size": utils.get_float,
+        "bid_price": utils.get_float,
+        "bid_size": utils.get_float,
+        "last_trade_price": utils.get_float,
+        "last_extended_hours_trade_price": utils.get_float
+    }
+    extracted_data = _extract_obj(quote_data, keys, typs=typs)
     for item in extracted_data:
         item['latest_price'] = (
             item['last_extended_hours_trade_price'] or
@@ -65,7 +79,7 @@ def get_quotes(symbols):
 
 
 def get_positions(stock_ids):
-    account_number = get_account_number()
+    account_number = get_account_info(key='account_number')
     url = "https://api.robinhood.com/accounts/{account_number}/positions/{{stock_id}}/".format(  # noqa
         account_number=account_number)
     positions = []
@@ -75,15 +89,23 @@ def get_positions(stock_ids):
         positions.append(position)
     keys = ["shares_held_for_buys", "average_buy_price",
             "shares_held_for_sells", "quantity"]
-    return _extract_obj(positions, keys)
+    typs = {
+        "shares_held_for_buys": utils.get_int,
+        "average_buy_price": utils.get_int,
+        "shares_held_for_sells": utils.get_int,
+        "quantity": utils.get_int
+    }
+    return _extract_obj(positions, keys, typs=typs)
 
 
-def get_account_number():
-    global _ACCOUNT_NUMBER
-    if _ACCOUNT_NUMBER is None:
-        _ACCOUNT_NUMBER = robin_stocks.profiles \
-            .load_account_profile()['account_number']
-    return _ACCOUNT_NUMBER
+def get_account_info(key=None, update=False):
+    global _ACCOUNT_PROFILE
+    if _ACCOUNT_PROFILE is None or update:
+        _ACCOUNT_PROFILE = robin_stocks.profiles.load_account_profile()
+    if key is None:
+        return _ACCOUNT_PROFILE.copy()
+    else:
+        return _ACCOUNT_PROFILE.get(key)
 
 
 def get_timestamp():
