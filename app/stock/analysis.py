@@ -1,6 +1,7 @@
 from app.stock import trade
 from copy import deepcopy
 from config import settings
+from app.logger import logger
 
 _MEMORY_STORAGE = {}
 
@@ -51,11 +52,10 @@ def _intend_to_trade(holding, suggestion):
     if suggestion is None:
         trade_type = None
     else:
-        trade_type = suggestion[0]
-    TRADE_INTENTION_THRESHOLD = 2
+        trade_type = suggestion['trade_type']
     symbol = holding['symbol']
     stock_storage = _MEMORY_STORAGE.setdefault(symbol, {})
-    shold_fullfill = False
+    should_fullfill = False
     if trade_type is None:
         stock_storage['intend_buy'] = 0
         stock_storage['intend_sell'] = 0
@@ -64,18 +64,18 @@ def _intend_to_trade(holding, suggestion):
         stock_storage['intend_buy'] = \
             (stock_storage.get('intend_buy') or 0) + 1
         stock_storage['intend_sell'] = 0
-        shold_fullfill = \
-            stock_storage['intend_buy'] >= TRADE_INTENTION_THRESHOLD
+        should_fullfill = \
+            stock_storage['intend_buy'] >= settings.TRADE_INTENTION_THRESHOLD
     elif trade_type is trade.TradeType.sell:
         stock_storage['intend_buy'] = 0
         stock_storage['intend_sell'] = \
             (stock_storage.get('intend_sell') or 0) + 1
-        shold_fullfill = \
-            stock_storage['intend_sell'] >= TRADE_INTENTION_THRESHOLD
-    if shold_fullfill:
+        should_fullfill = \
+            stock_storage['intend_sell'] >= settings.TRADE_INTENTION_THRESHOLD
+    if should_fullfill:
         stock_storage['intend_buy'] = 0
         stock_storage['intend_sell'] = 0
-    return shold_fullfill
+    return should_fullfill
 
 
 def _update_daily_extremes_after_trade(holding):
@@ -106,6 +106,8 @@ def _update_daily_extremes_after_trade(holding):
             stock_storage \
                 .setdefault(extreme_type, {}) \
                 .update({'price': extreme, 'after_trade': after_trade})
+        logger.debug("daily_extremes")
+        logger.debug(deepcopy(_MEMORY_STORAGE[symbol]))
     return deepcopy(_MEMORY_STORAGE[symbol])
 
 
@@ -121,10 +123,12 @@ def analyze(holding):
             if available_quantity > 1:
                 # sell all shares to stop loss
                 # but keep one to monitor on mobile app
-                shares = max(0, int(holding['quantity'] - 1))
+                shares = max(0, available_quantity - 1)
                 suggestion = {
                     'trade_type': trade.TradeType.sell,
-                    'shares': shares}
+                    'shares': shares,
+                    'reasons': "price is going down, sell to stop loss"}
+
     if not suggestion and daily_low is not None and latest_price is not None:
         # TODO: check available buying power before suggesting to buy
         if daily_low * settings.ACTION_DIFF_PERCENTAGE < latest_price:
@@ -137,7 +141,8 @@ def analyze(holding):
             if shares > 0:
                 suggestion = {
                     'trade_type': trade.TradeType.buy,
-                    'shares': shares}
+                    'shares': shares,
+                    'reasons': "price is going up, buy to gain"}
     if _intend_to_trade(holding, suggestion):
         return suggestion
     return None

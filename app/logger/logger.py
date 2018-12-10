@@ -1,7 +1,7 @@
 import datetime
 import pytz
 import os
-
+import pprint
 from config import settings
 
 _LAST_FILE_HOUR_ = None
@@ -11,7 +11,6 @@ _LOG_FILE_NAME_ = None
 def _log(info):
     global _LAST_FILE_HOUR_
     global _LOG_FILE_NAME_
-    import pprint
     pprint.pprint(info)
     timestamp = datetime.datetime.now(tz=pytz.timezone(settings.TIMEZONE))
     hour = timestamp.hour
