@@ -37,7 +37,6 @@ def run_service():
             for holding in holdings:
                 strategy = analysis.analyze(holding)
                 if strategy:
-
                     logger.debug("suggestion/strategy")
                     logger.debug(strategy)
                     details = trade.trade(
