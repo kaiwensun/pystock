@@ -51,7 +51,7 @@ def _intend_to_trade(holding, suggestion):
     if suggestion is None:
         trade_type = None
     else:
-        trade_type = suggestion[0]
+        trade_type = suggestion['trade_type']
     TRADE_INTENTION_THRESHOLD = 2
     symbol = holding['symbol']
     stock_storage = _MEMORY_STORAGE.setdefault(symbol, {})
@@ -121,7 +121,7 @@ def analyze(holding):
             if available_quantity > 1:
                 # sell all shares to stop loss
                 # but keep one to monitor on mobile app
-                shares = max(0, int(holding['quantity'] - 1))
+                shares = max(0, available_quantity - 1)
                 suggestion = {
                     'trade_type': trade.TradeType.sell,
                     'shares': shares}
