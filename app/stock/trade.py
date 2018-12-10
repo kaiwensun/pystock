@@ -94,6 +94,9 @@ def trade(holding, action, quantity, price=None, order_type=OrderType.market,
     details_str = pprint.pformat(details, indent=4)
     # This is temporarily used to let mobile app pause pystock sending emails
     if holding['shares_held_for_buys'] < 15:
+        stock_storage = analysis.get_storage(symbol)
+        stock_storage_str = pprint.pformat(stock_storage, indent=4)
         email.send_stock_order_email(
-            symbol, order_type, quantity, price, details_str)
+            symbol, order_type, quantity, price,
+            '\n'.join([details_str, stock_storage_str]))
     return details
