@@ -11,6 +11,10 @@ def clear_daily_storage():
     _MEMORY_STORAGE = {}
 
 
+def get_storage(symbol):
+    return _MEMORY_STORAGE.get(symbol)
+
+
 def expires_daily_extremes(holding, trade_type):
     """
     Call this function when you make a trade based on the daily extreme price.
