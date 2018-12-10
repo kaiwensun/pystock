@@ -29,16 +29,13 @@ def expires_daily_extremes(holding, trade_type):
         ...
     }
     """
-    if trade_type is trade.TradeType.buy:
-        extreme_type = 'high'
-    elif trade_type is trade.TradeType.sell:
-        extreme_type = 'low'
-    symbol = holding['symbol']
-    _MEMORY_STORAGE.get(symbol, {}) \
-        .get(extreme_type, {}) \
-        .update({
-            'price': holding['latest_price'],
-            'after_trade': True})
+    for extreme_type in ['high', 'low']:
+        symbol = holding['symbol']
+        _MEMORY_STORAGE.get(symbol, {}) \
+            .get(extreme_type, {}) \
+            .update({
+                'price': holding['latest_price'],
+                'after_trade': True})
 
 
 def _intend_to_trade(holding, suggestion):

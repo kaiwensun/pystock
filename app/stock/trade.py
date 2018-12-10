@@ -36,7 +36,8 @@ def trade(holding, action, quantity, price=None, order_type=OrderType.market,
     trigger = isinstance(trigger_type, TriggerType) and trigger_type.value
     stop_price = None if trigger_type == TriggerType.stop else stop_price
     if action == TradeType.buy:
-        price = price if price is not None else holding['bid_price']
+        # add extra 0.5% to let market orders can execute immediately
+        price = price if price is not None else holding['latest_price'] * 1.005
         # buying_power may change due to buying using mobile app.
         # so update=True
         margin_balances = infomation.get_account_info(
