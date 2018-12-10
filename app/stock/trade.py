@@ -5,6 +5,7 @@ import pprint
 from app.stock import infomation, analysis
 from app.notification import email
 from app.shared import utils
+from app.logger import logger
 
 
 class OrderType(enum.Enum):
@@ -31,11 +32,11 @@ def trade(holding, action, quantity, price=None, order_type=OrderType.market,
     instrument = "{}{}/".format(_instrument_url, _stock_id)
     symbol = holding['symbol']
     typ = isinstance(order_type, OrderType) and order_type.value
-    time_in_force = 'gfd'
+    time_in_force = 'ioc'
     trigger = isinstance(trigger_type, TriggerType) and trigger_type.value
-    price = price if price is not None else holding['latest_price']
     stop_price = None if trigger_type == TriggerType.stop else stop_price
     if action == TradeType.buy:
+        price = price if price is not None else holding['bid_price']
         # buying_power may change due to buying using mobile app.
         # so update=True
         margin_balances = infomation.get_account_info(
@@ -64,10 +65,11 @@ def trade(holding, action, quantity, price=None, order_type=OrderType.market,
         'type': typ,
         'time_in_force': time_in_force,
         'trigger': trigger,
-        'price': price,
         'quantity': quantity,
         'side': side
     }
+    if price is not None:
+        params['price'] = price
     if stop_price is not None:
         params['stop_price'] = stop_price
     if extended_hours:
@@ -82,6 +84,14 @@ def trade(holding, action, quantity, price=None, order_type=OrderType.market,
             holding['shares_held_for_buys'])
     else:
         response = robin_stocks.helper.request_post(order_url, params)
+        # this is to test valid values of time_in_force: ioc or gfd
+        # TODO: remove this test after understanding ioc
+        if response is None:
+            logger.debug('time_in_force = ioc not working. use gfd.')
+            params['time_in_force'] = 'gfd'
+            response = robin_stocks.helper.request_post(order_url, params)
+        else:
+            logger.debug('time_in_force = ioc works.')
         # Force update cached account info (eg. available buying power)
         infomation.get_account_info(update=True)
     details = {
