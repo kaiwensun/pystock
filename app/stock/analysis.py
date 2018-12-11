@@ -3,6 +3,8 @@ from copy import deepcopy
 from config import settings
 from app.logger import logger
 
+import math
+
 _MEMORY_STORAGE = {}
 
 
@@ -122,9 +124,10 @@ def analyze(holding):
     if daily_high is not None and latest_price is not None:
         if daily_high / settings.ACTION_DIFF_PERCENTAGE > latest_price:
             if available_quantity > 1:
-                # sell all shares to stop loss
+                # sell 2/3 of all shares to stop loss
                 # but keep one to monitor on mobile app
-                shares = max(0, available_quantity - 1)
+                shares = max(1, math.ceil(available_quantity * 2 / 3))
+                shares = min(shares, available_quantity)
                 suggestion = {
                     'trade_type': trade.TradeType.sell,
                     'shares': shares,
@@ -136,7 +139,7 @@ def analyze(holding):
             max_shares = settings.MAX_MONEY_PER_SYMBOL // latest_price
             curr_shares = \
                 holding['quantity'] + holding['shares_held_for_sells']
-            shares = max(1, int(curr_shares / 2))
+            shares = max(1, math.ceil(curr_shares / 2))
             if curr_shares + shares > max_shares:
                 shares = max_shares - curr_shares
             if shares > 0:
