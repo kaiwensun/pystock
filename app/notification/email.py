@@ -2,6 +2,7 @@ from sendgrid import SendGridAPIClient
 from config import settings
 from sendgrid.helpers.mail import Email, Content, Mail
 from app.logger import logger
+from app.shared import utils
 
 __all__ = ['send', 'send_stock_order_email']
 
@@ -20,8 +21,8 @@ def send(from_email, to_email, subject, content, content_type="text/plain"):
 
 
 def send_stock_order_email(symbol, order_type, quantity, price, details):
-    subject = "executing {} shares of {} as a {} order at {}.".format(
-        order_type, symbol, quantity, price)
+    subject = "executing {} shares of {} as a {} order at ${}.".format(
+        quantity, symbol, order_type, utils.round_price(price))
     send(settings.SENDGRID_FROM_EMAIL, settings.SENDGRID_TO_EMAIL,
          subject, details)
 
