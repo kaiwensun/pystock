@@ -80,15 +80,16 @@ def trade(holding, action, quantity, price=None, order_type=OrderType.market,
     # stock. Make 10 limit buy orders with $0.01 each, then you'll have a
     # share_held_for_buys > 9 almost forever.
     if holding['shares_held_for_buys'] > 9:
-        response = "stop trading due to shares_held_for_buys = {}".format(
-            holding['shares_held_for_buys'])
+        response = {
+            "error": "stop trading due to shares_held_for_buys = {}".format(
+                holding['shares_held_for_buys'])}
     else:
         response = robin_stocks.helper.request_post(order_url, params)
         # Force update cached account info (eg. available buying power)
         infomation.get_account_info(update=True)
     details = {
         'request': params,
-        'response': response
+        'response': response if response else {'error': 'fail to execute'}
     }
     analysis.expires_daily_extremes(holding, action)
     details_str = pprint.pformat(details, indent=4)
@@ -97,6 +98,6 @@ def trade(holding, action, quantity, price=None, order_type=OrderType.market,
         stock_storage = analysis.get_storage(symbol)
         stock_storage_str = pprint.pformat(stock_storage, indent=4)
         email.send_stock_order_email(
-            symbol, order_type, quantity, params.get('price', 'unset'),
+            symbol, side, quantity, response.get('price', 'unset'),
             '\n'.join([details_str, stock_storage_str]))
     return details
