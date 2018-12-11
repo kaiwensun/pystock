@@ -4,9 +4,11 @@ import time
 from config import settings
 from app.stock import infomation, analysis, trade
 from app.logger import logger
+from app.notification import email
 
 
 def run_service():
+    email.send_on_start()
     robin_stocks.login(settings.USER_EMAIL, settings.USER_PASSWORD)
     while True:
         holdings = None

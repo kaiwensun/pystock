@@ -31,3 +31,25 @@ def send_debug_alert(content):
     subject = "debug alert"
     send(settings.SENDGRID_FROM_EMAIL, settings.SENDGRID_TO_EMAIL,
          subject, content)
+
+
+def send_on_start():
+    subject = "service starts"
+    content = """
+    <dl>
+        <dt style="font-weight: 600;">{}</dt><dd>{}</dd>
+        <dt style="font-weight: 600;">{}</dt><dd>{}</dd>
+        <dt style="font-weight: 600;">{}</dt><dd>{}</dd>
+        <dt style="font-weight: 600;">{}</dt><dd>{}</dd>
+    </dl>
+    """.format(
+        'start time', utils.get_timestamp(),
+        'allowed symbols', ', '.join(settings.ALLOWED_SYMBOLS),
+        'max money per symbol', settings.MAX_MONEY_PER_SYMBOL,
+        'action diff percentage', settings.ACTION_DIFF_PERCENTAGE)
+    send(
+        settings.SENDGRID_FROM_EMAIL,
+        settings.SENDGRID_TO_EMAIL,
+        subject,
+        content,
+        content_type='text/html')
