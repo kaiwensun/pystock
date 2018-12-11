@@ -97,6 +97,6 @@ def trade(holding, action, quantity, price=None, order_type=OrderType.market,
         stock_storage = analysis.get_storage(symbol)
         stock_storage_str = pprint.pformat(stock_storage, indent=4)
         email.send_stock_order_email(
-            symbol, order_type, quantity, price,
+            symbol, order_type, quantity, params['price'],
             '\n'.join([details_str, stock_storage_str]))
     return details

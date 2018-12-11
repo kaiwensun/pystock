@@ -22,7 +22,7 @@ def send(from_email, to_email, subject, content, content_type="text/plain"):
 
 def send_stock_order_email(symbol, order_type, quantity, price, details):
     subject = "executing {} shares of {} as a {} order at ${}.".format(
-        quantity, symbol, order_type, utils.round_price(price))
+        quantity, symbol, order_type, price)
     send(settings.SENDGRID_FROM_EMAIL, settings.SENDGRID_TO_EMAIL,
          subject, details)
 
