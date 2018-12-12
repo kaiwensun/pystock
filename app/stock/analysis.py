@@ -115,6 +115,18 @@ def _update_daily_extremes_after_trade(holding):
 
 
 def analyze(holding):
+    symbol = holding['symbol']
+    stock_config = get_stock_config(symbol)
+    strategies = {
+        'chase': strategy_chase
+    }
+    strategy = strategies[stock_config['strategy']]
+    return strategy(holding)
+
+
+def strategy_chase(holding):
+    symbol = holding['symbol']
+    stock_config = get_stock_config(symbol)
     daily_extremes = _update_daily_extremes_after_trade(holding)
     available_quantity = holding['quantity'] - holding['shares_held_for_sells']
     daily_high = daily_extremes.get('high', {}).get('price')
@@ -122,31 +134,39 @@ def analyze(holding):
     latest_price = holding['latest_price']
     suggestion = None
     if daily_high is not None and latest_price is not None:
-        if daily_high / settings.ACTION_DIFF_PERCENTAGE > latest_price:
-            if available_quantity > 1:
-                # sell 2/3 of all shares to stop loss
-                # but keep one to monitor on mobile app
-                shares = max(1, math.ceil(available_quantity * 2 / 3))
-                shares = min(shares, available_quantity)
+        if daily_high * stock_config['sell_price_trigger'] > latest_price:
+            if available_quantity > 0:
+                quantity = math.ceil(
+                    available_quantity *
+                    stock_config['sell_quantity_ratio'])
+                quantity = min(quantity, available_quantity)
                 suggestion = {
                     'trade_type': trade.TradeType.sell,
-                    'shares': shares,
-                    'reasons': "price is going down, sell to stop loss"}
+                    'quantity': quantity}
 
     if not suggestion and daily_low is not None and latest_price is not None:
         # TODO: check available buying power before suggesting to buy
-        if daily_low * settings.ACTION_DIFF_PERCENTAGE < latest_price:
-            max_shares = settings.MAX_MONEY_PER_SYMBOL // latest_price
+        if daily_low * stock_config['buy_price_trigger'] <= latest_price:
+            max_shares = stock_config['max_money'] // latest_price
             curr_shares = \
                 holding['quantity'] + holding['shares_held_for_sells']
-            shares = max(1, math.ceil(curr_shares / 2))
-            if curr_shares + shares > max_shares:
-                shares = max_shares - curr_shares
-            if shares > 0:
+            quantity = max(
+                1,
+                math.ceil(
+                    curr_shares *
+                    stock_config['buy_quantity_ratio']))
+            if curr_shares + quantity > max_shares:
+                quantity = max_shares - curr_shares
+            if quantity > 0:
                 suggestion = {
                     'trade_type': trade.TradeType.buy,
-                    'shares': shares,
-                    'reasons': "price is going up, buy to gain"}
+                    'quantity': quantity}
+
     if _intend_to_trade(holding, suggestion):
+        suggestion['extended_hours'] = stock_config['extended_hours']
         return suggestion
     return None
+
+
+def get_stock_config(symbol):
+    return settings.MANAGED_STOCKS[symbol]

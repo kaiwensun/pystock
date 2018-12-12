@@ -14,10 +14,16 @@ def send(from_email, to_email, subject, content, content_type="text/plain"):
     subject = "[pystock] {}".format(subject)
     content = Content(content_type, content)
     mail = Mail(from_email, subject, to_email, content)
-    response = sg.client.mail.send.post(request_body=mail.get())
-    if response.status_code != 202:
+    try:
+        response = sg.client.mail.send.post(request_body=mail.get())
+    except Exception:
+        response = False
+    if response and response.status_code != 202:
         logger.debug("Failed to send message: {}. Status code {}".format(
             content, response.status_code))
+    elif not response:
+        logger.debug("Failed to send message: {}. response is {}".format(
+            content, response))
 
 
 def send_stock_order_email(symbol, trade_type_value, quantity, price, details):
@@ -45,7 +51,7 @@ def send_on_start():
     </dl>
     """.format(
         'start time', utils.get_timestamp(),
-        'allowed symbols', ', '.join(settings.ALLOWED_SYMBOLS),
+        'managed stocks', settings.MANAGED_STOCKS,
         'max money per symbol', settings.MAX_MONEY_PER_SYMBOL,
         'action diff percentage', settings.ACTION_DIFF_PERCENTAGE)
     send(
