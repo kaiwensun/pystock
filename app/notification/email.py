@@ -42,18 +42,18 @@ def send_debug_alert(content):
 
 def send_on_start():
     subject = "service starts"
+    managed_stocks = "".join([
+        "<li>{}</li>".format({key: value})
+        for key, value in settings.MANAGED_STOCKS.items()])
+    mamaged_stocks = "<ul>{}</ul>".format(managed_stocks)
     content = """
     <dl>
-        <dt style="font-weight: 600;">{}</dt><dd>{}</dd>
-        <dt style="font-weight: 600;">{}</dt><dd>{}</dd>
         <dt style="font-weight: 600;">{}</dt><dd>{}</dd>
         <dt style="font-weight: 600;">{}</dt><dd>{}</dd>
     </dl>
     """.format(
         'start time', utils.get_timestamp(),
-        'managed stocks', settings.MANAGED_STOCKS,
-        'max money per symbol', settings.MAX_MONEY_PER_SYMBOL,
-        'action diff percentage', settings.ACTION_DIFF_PERCENTAGE)
+        'managed stocks', mamaged_stocks)
     send(
         settings.SENDGRID_FROM_EMAIL,
         settings.SENDGRID_TO_EMAIL,
