@@ -22,7 +22,7 @@ class TradeType(enum.Enum):
     sell = 'sell'
 
 
-def trade(holding, action, quantity, price=None, order_type=OrderType.market,
+def trade(holding, trade_type, quantity, price=None, order_type=OrderType.limit,
           trigger_type=TriggerType.immediate, stop_price=None,
           extended_hours=False):
     account = infomation.get_account_info(key='url')
@@ -34,7 +34,7 @@ def trade(holding, action, quantity, price=None, order_type=OrderType.market,
     time_in_force = 'gfd'
     trigger = isinstance(trigger_type, TriggerType) and trigger_type.value
     stop_price = None if trigger_type == TriggerType.stop else stop_price
-    if action == TradeType.buy:
+    if trade_type == TradeType.buy:
         # add extra 0.5% to let market orders can execute immediately
         price = price if price is not None else holding['latest_price'] * 1.005
         # buying_power may change due to buying using mobile app.
@@ -51,15 +51,17 @@ def trade(holding, action, quantity, price=None, order_type=OrderType.market,
             quantity = 0
         if quantity * price > buying_power:
             quantity = buying_power // price
-    elif action == TradeType.sell:
+    elif trade_type == TradeType.sell:
+        price = price if price is not None else holding['latest_price'] / 1.005
         available_quantity = \
             holding['quantity'] - holding['shares_held_for_sells']
         quantity = min(available_quantity, quantity)
     if quantity == 0:
         return None
-    side = isinstance(action, TradeType) and action.value
+    side = isinstance(trade_type, TradeType) and trade_type.value
     params = {
         'account': account,
+        'price': utils.round_price(price),
         'instrument': instrument,
         'symbol': symbol,
         'type': typ,
@@ -68,8 +70,6 @@ def trade(holding, action, quantity, price=None, order_type=OrderType.market,
         'quantity': quantity,
         'side': side
     }
-    if price is not None:
-        params['price'] = utils.round_price(price)
     if stop_price is not None:
         params['stop_price'] = utils.round_price(stop_price)
     if extended_hours:
@@ -91,13 +91,12 @@ def trade(holding, action, quantity, price=None, order_type=OrderType.market,
         'request': params,
         'response': response if response else {'error': 'fail to execute'}
     }
-    analysis.expires_daily_extremes(holding, action)
+    analysis.expires_daily_extremes(holding, trade_type)
     details_str = pprint.pformat(details, indent=4)
     # This is temporarily used to let mobile app pause pystock sending emails
-    if holding['shares_held_for_buys'] < 15:
-        stock_storage = analysis.get_storage(symbol)
-        stock_storage_str = pprint.pformat(stock_storage, indent=4)
-        email.send_stock_order_email(
-            symbol, side, quantity, response.get('price', 'unset'),
-            '\n'.join([details_str, stock_storage_str]))
+    stock_storage = analysis.get_storage(symbol)
+    stock_storage_str = pprint.pformat(stock_storage, indent=4)
+    email.send_stock_order_email(
+        symbol, side, quantity, response.get('price', 'unset'),
+        '\n'.join([details_str, stock_storage_str]))
     return details

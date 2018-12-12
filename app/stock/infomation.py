@@ -144,8 +144,7 @@ def _parse_market_time(str):
         str, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=pytz.UTC)
 
 
-def build_holdings():
-    symbols = settings.ALLOWED_SYMBOLS.copy()
+def build_holdings(symbols):
     fundamentals = get_fundamentals(symbols)
     instruments = get_instruments(symbols)
     quotes = get_quotes(symbols)
