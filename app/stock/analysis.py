@@ -128,6 +128,7 @@ def strategy_chase(holding):
     symbol = holding['symbol']
     stock_config = get_stock_config(symbol)
     daily_extremes = _update_daily_extremes_after_trade(holding)
+    logger.debug(daily_extremes)
     available_quantity = holding['quantity'] - holding['shares_held_for_sells']
     daily_high = daily_extremes.get('high', {}).get('price')
     daily_low = daily_extremes.get('low', {}).get('price')
