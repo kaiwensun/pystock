@@ -108,12 +108,6 @@ def get_account_info(key=None, update=False):
         return _ACCOUNT_PROFILE.get(key)
 
 
-def get_timestamp():
-    time_format = '%m/%d/%Y %H:%M:%S %Z'
-    timestamp = datetime.datetime.now(tz=pytz.timezone(settings.TIMEZONE))
-    return timestamp.strftime(time_format)
-
-
 def market_open_time(mic):
     utcnow = datetime.datetime.now(tz=pytz.utc)
     res = {
@@ -150,14 +144,13 @@ def _parse_market_time(str):
         str, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=pytz.UTC)
 
 
-def build_holdings():
-    symbols = settings.ALLOWED_SYMBOLS.copy()
+def build_holdings(symbols):
     fundamentals = get_fundamentals(symbols)
     instruments = get_instruments(symbols)
     quotes = get_quotes(symbols)
     stock_ids = [instrument['stock_id'] for instrument in instruments]
     positions = get_positions(stock_ids)
-    timestamp = get_timestamp()
+    timestamp = utils.get_timestamp()
     holdings = [{'timestamp': timestamp} for _ in symbols]
     for i in range(len(holdings)):
         for data_lst in [fundamentals, instruments, quotes, positions]:
