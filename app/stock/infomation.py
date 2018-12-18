@@ -2,7 +2,6 @@ import datetime
 import pytz
 import robin_stocks
 
-from config import settings
 from app.shared import utils
 
 _NEED_UPDATE = set()
