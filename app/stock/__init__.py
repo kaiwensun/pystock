@@ -1,5 +1,6 @@
 import robin_stocks
 import time
+import bdb
 
 from config import settings
 from app.stock import infomation, analysis, trade
@@ -47,6 +48,8 @@ def run_service():
                             logger.debug(details)
                 logger.debug(holdings)
             time.sleep(sleep_time)
+        except bdb.BdbQuit:
+            raise
         except Exception:
             logger.log_exception()
             global _exc_cnt
