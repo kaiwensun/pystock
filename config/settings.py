@@ -29,6 +29,9 @@ SENDGRID_API_KEY = _NOT_SET_  # APPLY_ONE_FROM_SENDGRID_WEBSITE
 SENDGRID_FROM_EMAIL = _NOT_SET_
 SENDGRID_TO_EMAIL = _NOT_SET_
 
+# Control settings
+PROPAGATE_EXCEPTION = False
+
 thismodule = sys.modules[__name__]
 try:
     import local_settings

@@ -54,7 +54,7 @@ def run_service():
             logger.log_exception()
             global _exc_cnt
             _exc_cnt += 1
-            if _exc_cnt > 4:
+            if _exc_cnt > 4 or settings.PROPAGATE_EXCEPTION:
                 email.send_exception(
                     'ABORT', 'Too many exceptions! Program excited.')
                 exit(1)
