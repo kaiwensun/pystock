@@ -1,0 +1,2 @@
+alias run_daemon="screen -dmSL stock ./scripts/run_devserver.sh"
+alias int_daemon="screen -S stock -x"
