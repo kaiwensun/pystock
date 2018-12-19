@@ -25,19 +25,20 @@ class TradeType(enum.Enum):
 def trade(holding, trade_type, quantity, price=None,
           order_type=OrderType.limit, trigger_type=TriggerType.immediate,
           stop_price=None, extended_hours=False):
+    symbol = holding['symbol']
+    stock_config = analysis.get_stock_config(symbol)
     account = infomation.get_account_info(key='url')
     _stock_id = holding['stock_id']
     _instrument_url = robin_stocks.urls.instruments()
     instrument = "{}{}/".format(_instrument_url, _stock_id)
-    symbol = holding['symbol']
     typ = isinstance(order_type, OrderType) and order_type.value
     time_in_force = 'gfd'
     trigger = isinstance(trigger_type, TriggerType) and trigger_type.value
     stop_price = None if trigger_type == TriggerType.stop else stop_price
     if trade_type == TradeType.buy:
-        # add extra 0.5% to let market orders can execute immediately
+        floating_ratio = (1 + stock_config['trade_price_margin'])
         price = price if price is not None \
-            else holding['latest_price'] * 1.0015
+            else holding['latest_price'] * floating_ratio
         # buying_power may change due to buying using mobile app.
         # so update=True
         margin_balances = infomation.get_account_info(
@@ -53,8 +54,9 @@ def trade(holding, trade_type, quantity, price=None,
         if quantity * price > buying_power:
             quantity = buying_power // price
     elif trade_type == TradeType.sell:
+        floating_ratio = (1 + stock_config['trade_price_margin'])
         price = price if price is not None \
-            else holding['latest_price'] / 1.0015
+            else holding['latest_price'] / floating_ratio
         available_quantity = \
             holding['quantity'] - holding['shares_held_for_sells']
         quantity = min(available_quantity, quantity)

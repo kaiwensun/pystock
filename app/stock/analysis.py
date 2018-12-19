@@ -175,4 +175,4 @@ def strategy_chase(holding):
 
 
 def get_stock_config(symbol):
-    return settings.MANAGED_STOCKS[symbol]
+    return settings.MANAGED_STOCKS[symbol].copy()
