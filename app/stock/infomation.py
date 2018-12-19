@@ -153,5 +153,11 @@ def build_holdings(symbols):
     holdings = [{'timestamp': timestamp} for _ in symbols]
     for i in range(len(holdings)):
         for data_lst in [fundamentals, instruments, quotes, positions]:
-            holdings[i].update(data_lst[i])
+            try:
+                holdings[i].update(data_lst[i])
+            except IndexError as e:
+                # This error has happend a few times. Let's investigate
+                e.args = e.args + ('i={}'.format(i),
+                                   repr(holdings), repr(data_lst))
+                raise
     return holdings

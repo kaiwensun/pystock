@@ -7,7 +7,8 @@ from app.shared import utils
 __all__ = ['send', 'send_stock_order_email']
 
 
-def send(from_email, to_email, subject, content, content_type="text/plain"):
+def send(subject, content, from_email=settings.SENDGRID_FROM_EMAIL,
+         to_email=settings.SENDGRID_TO_EMAIL, content_type="text/plain"):
     sg = SendGridAPIClient(apikey=settings.SENDGRID_API_KEY)
     from_email = Email(from_email)
     to_email = Email(to_email)
@@ -30,14 +31,12 @@ def send_stock_order_email(symbol, trade_type_value, quantity, price, details):
     subject = "{}ing {} share{} of {} at ${}.".format(
         trade_type_value, quantity, '' if quantity == 1 else 's', symbol,
         price)
-    send(settings.SENDGRID_FROM_EMAIL, settings.SENDGRID_TO_EMAIL,
-         subject, details)
+    send(subject, details)
 
 
 def send_debug_alert(content):
     subject = "debug alert"
-    send(settings.SENDGRID_FROM_EMAIL, settings.SENDGRID_TO_EMAIL,
-         subject, content)
+    send(subject, content)
 
 
 def send_on_start():
@@ -54,9 +53,9 @@ def send_on_start():
     """.format(
         'start time', utils.get_timestamp(),
         'managed stocks', mamaged_stocks)
-    send(
-        settings.SENDGRID_FROM_EMAIL,
-        settings.SENDGRID_TO_EMAIL,
-        subject,
-        content,
-        content_type='text/html')
+    send(subject, content, content_type='text/html')
+
+
+def send_exception(subject, content):
+    subject = '[exception]{}'.format(subject)
+    send(subject, content, content_type="text/plain")
