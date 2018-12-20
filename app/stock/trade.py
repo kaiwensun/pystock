@@ -5,6 +5,7 @@ import pprint
 from app.stock import infomation, analysis
 from app.notification import email
 from app.shared import utils
+from config import settings
 
 
 class OrderType(enum.Enum):
@@ -87,6 +88,9 @@ def trade(holding, trade_type, quantity, price=None,
         response = {
             "error": "stop trading due to shares_held_for_buys = {}".format(
                 holding['shares_held_for_buys'])}
+    elif not settings.MAKE_TRADE:
+        response = {
+            "error": "MAKE_TRADE is False"}
     else:
         response = robin_stocks.helper.request_post(order_url, params)
         # Force update cached account info (eg. available buying power)
