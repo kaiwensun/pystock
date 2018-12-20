@@ -26,7 +26,7 @@ def _log(info):
             "logs",
             str(timestamp.year),
             str(timestamp.month),
-            str(timestamp.day),
+            "{:02d}".format(timestamp.day),
             "{}.log".format(timestamp.strftime(time_format)))
         if not os.path.exists(os.path.dirname(_LOG_FILE_NAME_)):
             os.makedirs(os.path.dirname(_LOG_FILE_NAME_))
