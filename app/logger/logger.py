@@ -1,8 +1,11 @@
 import datetime
 import pytz
 import os
+import traceback
+import sys
 
 from config import settings
+from app import notification
 
 _LAST_FILE_HOUR_ = None
 _LOG_FILE_NAME_ = None
@@ -23,7 +26,7 @@ def _log(info):
             "logs",
             str(timestamp.year),
             str(timestamp.month),
-            str(timestamp.day),
+            "{:02d}".format(timestamp.day),
             "{}.log".format(timestamp.strftime(time_format)))
         if not os.path.exists(os.path.dirname(_LOG_FILE_NAME_)):
             os.makedirs(os.path.dirname(_LOG_FILE_NAME_))
@@ -33,6 +36,17 @@ def _log(info):
             myfile.write(logtext + '\n')
     finally:
         myfile.close()
+
+
+def log_exception():
+    exc_info = sys.exc_info()
+    if exc_info == (None, None, None):
+        return
+    typ, value, tb = exc_info
+    summary = traceback.format_tb(tb)
+    subject = typ.__name__
+    content = "\n".join([repr(value)] + summary)
+    notification.email.send_exception(subject, content)
 
 
 def debug(info):

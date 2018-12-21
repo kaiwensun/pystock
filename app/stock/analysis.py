@@ -8,6 +8,14 @@ import math
 _MEMORY_STORAGE = {}
 
 
+def set_value(key, value):
+    _MEMORY_STORAGE[key] = value
+
+
+def get_value(key):
+    return _MEMORY_STORAGE.get(key)
+
+
 def clear_daily_storage():
     global _MEMORY_STORAGE
     _MEMORY_STORAGE = {}
@@ -167,4 +175,4 @@ def strategy_chase(holding):
 
 
 def get_stock_config(symbol):
-    return settings.MANAGED_STOCKS[symbol]
+    return settings.MANAGED_STOCKS[symbol].copy()

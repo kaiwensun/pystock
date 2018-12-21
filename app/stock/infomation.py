@@ -2,7 +2,6 @@ import datetime
 import pytz
 import robin_stocks
 
-from config import settings
 from app.shared import utils
 
 _NEED_UPDATE = set()
@@ -10,56 +9,92 @@ _MONITORED_STOCKS = {}
 _ACCOUNT_PROFILE = None
 
 
+class NoneExtractableError(ValueError):
+    pass
+
+
+class MismatchResultError(ValueError):
+    pass
+
+
+def retry(func):
+    def retry_wrapper(lst, *args, **kwargs):
+        RETRY_TIME = 3
+        for _ in range(RETRY_TIME):
+            nee = None
+            res = None
+            try:
+                res = func(lst, *args, **kwargs)
+                valid = len(lst) == len(res) and all(res)
+            except NoneExtractableError as e:
+                valid = False
+                nee = e
+            if valid:
+                return res
+        log = {
+            'func': func.__code__,
+            'lst': lst,
+            'args': args,
+            'kwargs': kwargs,
+            'res': res
+        }
+        if nee is None:
+            raise MismatchResultError(log)
+        else:
+            nee.args += (log,)
+            raise nee
+    return retry_wrapper
+
+
 def mark_need_update(symbol):
     _NEED_UPDATE.add(symbol)
 
 
-def _extract_obj(obj_or_lst, keys, rename={}, typs={}):
+def _extract_obj(lst, keys, rename={}, typs={}):
     """
-    Extract from dict(s) to get only key-value pairs that we are interested in.
+    Extract from a list of dicts to get only key-value pairs that we are
+    interested in.
 
-    :param obj_or_lst: The dict that we want to extract from, or a list of \
-    dicts.
+    :param lst: The list of dicts that we want to extract from.
     :param keys: The list of keys that we are interested in.
     :param renames: a mapping to rename the keys of the output dict.
-    :return: the extracted dict, or a list of extracted dicts.
-
+    :return: a list of extracted dicts.
     """
-    if isinstance(obj_or_lst, dict):
-        is_dict = True
-        lst = [obj_or_lst]
-    else:
-        is_dict = False
-        lst = obj_or_lst
     extracted_lst = []
     for obj in lst:
+        if not obj:
+            # This is an exception that happens quite often
+            raise NoneExtractableError(lst, keys)
         extracted = {}
         for key in keys:
             if typs.get(key):
                 obj[key] = typs.get(key)(obj[key])
             extracted[rename.get(key, key)] = obj[key]
         extracted_lst.append(extracted)
-    return extracted_lst[0] if is_dict else extracted_lst
+    return extracted_lst
 
 
+@retry
 def get_fundamentals(symbols):
-    fundamental_data = robin_stocks.stocks.get_fundamentals(symbols)
+    fundamentals_data = robin_stocks.stocks.get_fundamentals(symbols)
     keys = ['open', 'high', 'low']
     typs = {'open': utils.get_float,
             'high': utils.get_float,
             'low': utils.get_float}
-    return _extract_obj(fundamental_data, keys, typs=typs)
+    return _extract_obj(fundamentals_data, keys, typs=typs)
 
 
+@retry
 def get_instruments(symbols):
-    instrument_data = robin_stocks.stocks.get_instruments_by_symbols(symbols)
+    instruments_data = robin_stocks.stocks.get_instruments_by_symbols(symbols)
     keys = ['tradability', 'rhs_tradability', "simple_name", "id", "symbol"]
     renames = {"id": "stock_id"}
-    return _extract_obj(instrument_data, keys, renames)
+    return _extract_obj(instruments_data, keys, renames)
 
 
+@retry
 def get_quotes(symbols):
-    quote_data = robin_stocks.stocks.get_quotes(symbols)
+    quotes_data = robin_stocks.stocks.get_quotes(symbols)
     keys = ["ask_price", "ask_size", "bid_price", "bid_size",
             "last_trade_price", "last_extended_hours_trade_price"]
     typs = {
@@ -70,7 +105,7 @@ def get_quotes(symbols):
         "last_trade_price": utils.get_float,
         "last_extended_hours_trade_price": utils.get_float
     }
-    extracted_data = _extract_obj(quote_data, keys, typs=typs)
+    extracted_data = _extract_obj(quotes_data, keys, typs=typs)
     for item in extracted_data:
         item['latest_price'] = (
             item['last_extended_hours_trade_price'] or
@@ -78,6 +113,7 @@ def get_quotes(symbols):
     return extracted_data
 
 
+@retry
 def get_positions(stock_ids):
     account_number = get_account_info(key='account_number')
     url = "https://api.robinhood.com/accounts/{account_number}/positions/{{stock_id}}/".format(  # noqa
@@ -145,6 +181,16 @@ def _parse_market_time(str):
 
 
 def build_holdings(symbols):
+    MAX_LIST_LEN = 3
+    holdings = []
+    for start in range(0, len(symbols), MAX_LIST_LEN):
+        sub_symbols = symbols[start: start + MAX_LIST_LEN]
+        sub_holdings = _build_holdings(sub_symbols)
+        holdings.extend(sub_holdings)
+    return holdings
+
+
+def _build_holdings(symbols):
     fundamentals = get_fundamentals(symbols)
     instruments = get_instruments(symbols)
     quotes = get_quotes(symbols)
@@ -154,5 +200,11 @@ def build_holdings(symbols):
     holdings = [{'timestamp': timestamp} for _ in symbols]
     for i in range(len(holdings)):
         for data_lst in [fundamentals, instruments, quotes, positions]:
-            holdings[i].update(data_lst[i])
+            try:
+                holdings[i].update(data_lst[i])
+            except IndexError as e:
+                # This error has happend a few times. Let's investigate
+                e.args = e.args + ('i={}'.format(i),
+                                   repr(holdings), repr(data_lst))
+                raise
     return holdings
