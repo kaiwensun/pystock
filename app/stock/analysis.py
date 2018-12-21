@@ -130,6 +130,7 @@ def strategy_chase(holding):
     symbol = holding['symbol']
     stock_config = get_stock_config(symbol)
     daily_extremes = _update_daily_extremes_after_trade(holding)
+    logger.debug(daily_extremes)
     available_quantity = holding['quantity'] - holding['shares_held_for_sells']
     daily_high = daily_extremes.get('high', {}).get('price')
     daily_low = daily_extremes.get('low', {}).get('price')
@@ -148,6 +149,7 @@ def strategy_chase(holding):
                     'reasons': "price is going down from daily high " + str(daily_high) + " to latest price " +
                                str(latest_price) + ". The down ratio is above sell_price_trigger " +
                                str(stock_config['sell_price_trigger'])}
+
     if not suggestion and daily_low is not None and latest_price is not None:
         # TODO: check available buying power before suggesting to buy
         if daily_low * stock_config['buy_price_trigger'] <= latest_price:
@@ -168,6 +170,7 @@ def strategy_chase(holding):
                     'reasons': "price is going up from daily low " + str(daily_low) + " to latest price " +
                                str(latest_price) + ". The up ratio is above buy_price_trigger " +
                                str(stock_config['buy_price_trigger'])}
+
     if _intend_to_trade(holding, suggestion):
         suggestion['extended_hours'] = stock_config['extended_hours']
         return suggestion
