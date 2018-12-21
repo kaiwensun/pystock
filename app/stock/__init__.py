@@ -56,7 +56,7 @@ def run_service():
             _exc_cnt += 1
             if _exc_cnt > 4 or settings.PROPAGATE_EXCEPTION:
                 email.send_exception(
-                    'ABORT', 'Too many exceptions! Program excited.')
+                    'ABORT', 'Too many exceptions! Program exited.')
                 exit(1)
 
 
