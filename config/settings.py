@@ -16,6 +16,7 @@ MANAGED_STOCKS = {
         "extended_hours": True
     }
 }
+TRADE_INTENTION_THRESHOLD = _NOT_SET_
 USER_EMAIL = _NOT_SET_
 USER_PASSWORD = _NOT_SET_
 MAKE_TRADE = False

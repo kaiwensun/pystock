@@ -85,6 +85,7 @@ def _update_daily_extremes_after_trade(holding):
     symbol = holding['symbol']
     latest_price = holding['latest_price']
     stock_storage = _MEMORY_STORAGE.setdefault(symbol, {})
+    past_stock_storage = deepcopy(_MEMORY_STORAGE[symbol])
     if latest_price is not None:
         # calc highest
         for extreme_type in ['high', 'low']:
@@ -109,8 +110,9 @@ def _update_daily_extremes_after_trade(holding):
             stock_storage \
                 .setdefault(extreme_type, {}) \
                 .update({'price': extreme, 'after_trade': after_trade})
-        logger.debug("daily_extremes")
-        logger.debug(deepcopy(_MEMORY_STORAGE[symbol]))
+        if not (past_stock_storage.get("high", {}).get('price') == stock_storage.get("high", {}).get('price')
+                and past_stock_storage.get("low", {}).get('price') == stock_storage.get("low", {}).get('price')):
+            logger.debug(_MEMORY_STORAGE[symbol], "daily_extreme")
     return deepcopy(_MEMORY_STORAGE[symbol])
 
 
@@ -128,7 +130,6 @@ def strategy_chase(holding):
     symbol = holding['symbol']
     stock_config = get_stock_config(symbol)
     daily_extremes = _update_daily_extremes_after_trade(holding)
-    logger.debug(daily_extremes)
     available_quantity = holding['quantity'] - holding['shares_held_for_sells']
     daily_high = daily_extremes.get('high', {}).get('price')
     daily_low = daily_extremes.get('low', {}).get('price')
@@ -143,8 +144,10 @@ def strategy_chase(holding):
                 quantity = min(quantity, available_quantity)
                 suggestion = {
                     'trade_type': trade.TradeType.sell,
-                    'quantity': quantity}
-
+                    'quantity': quantity,
+                    'reasons': "price is going down from daily high " + str(daily_high) + " to latest price " +
+                               str(latest_price) + ". The down ratio is above sell_price_trigger " +
+                               str(stock_config['sell_price_trigger'])}
     if not suggestion and daily_low is not None and latest_price is not None:
         # TODO: check available buying power before suggesting to buy
         if daily_low * stock_config['buy_price_trigger'] <= latest_price:
@@ -161,8 +164,10 @@ def strategy_chase(holding):
             if quantity > 0:
                 suggestion = {
                     'trade_type': trade.TradeType.buy,
-                    'quantity': quantity}
-
+                    'quantity': quantity,
+                    'reasons': "price is going up from daily low " + str(daily_low) + " to latest price " +
+                               str(latest_price) + ". The up ratio is above buy_price_trigger " +
+                               str(stock_config['buy_price_trigger'])}
     if _intend_to_trade(holding, suggestion):
         suggestion['extended_hours'] = stock_config['extended_hours']
         return suggestion
