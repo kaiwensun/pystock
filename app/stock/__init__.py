@@ -33,12 +33,14 @@ def run_service():
             logger.debug("sleep when market has not opened yet")
             analysis.clear_daily_storage()
             sleep_time = - int(market_info['utcnow - start']) - 60 * 3
+
         if holdings is not None:
+            logger.debug(holdings, "holdings")
             for holding in holdings:
                 suggestion = analysis.analyze(holding)
                 if suggestion:
+                    logger.debug(suggestion, "suggestion")
                     details = trade.trade(holding, **suggestion)
                     if details is not None:
-                        logger.debug(details)
-            logger.debug(holdings)
+                        logger.debug(details, "trade_details")
         time.sleep(sleep_time)

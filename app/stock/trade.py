@@ -22,7 +22,7 @@ class TradeType(enum.Enum):
     sell = 'sell'
 
 
-def trade(holding, trade_type, quantity, price=None, order_type=OrderType.limit,
+def trade(holding, trade_type, quantity, reasons, price=None, order_type=OrderType.limit,
           trigger_type=TriggerType.immediate, stop_price=None,
           extended_hours=False):
     account = infomation.get_account_info(key='url')

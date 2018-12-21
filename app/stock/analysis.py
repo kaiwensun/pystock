@@ -56,10 +56,9 @@ def _intend_to_trade(holding, suggestion):
         trade_type = None
     else:
         trade_type = suggestion['trade_type']
-    TRADE_INTENTION_THRESHOLD = 2
     symbol = holding['symbol']
     stock_storage = _MEMORY_STORAGE.setdefault(symbol, {})
-    shold_fullfill = False
+    should_fullfill = False
     if trade_type is None:
         stock_storage['intend_buy'] = 0
         stock_storage['intend_sell'] = 0
@@ -68,24 +67,25 @@ def _intend_to_trade(holding, suggestion):
         stock_storage['intend_buy'] = \
             (stock_storage.get('intend_buy') or 0) + 1
         stock_storage['intend_sell'] = 0
-        shold_fullfill = \
-            stock_storage['intend_buy'] >= TRADE_INTENTION_THRESHOLD
+        should_fullfill = \
+            stock_storage['intend_buy'] >= settings.TRADE_INTENTION_THRESHOLD
     elif trade_type is trade.TradeType.sell:
         stock_storage['intend_buy'] = 0
         stock_storage['intend_sell'] = \
             (stock_storage.get('intend_sell') or 0) + 1
-        shold_fullfill = \
-            stock_storage['intend_sell'] >= TRADE_INTENTION_THRESHOLD
-    if shold_fullfill:
+        should_fullfill = \
+            stock_storage['intend_sell'] >= settings.TRADE_INTENTION_THRESHOLD
+    if should_fullfill:
         stock_storage['intend_buy'] = 0
         stock_storage['intend_sell'] = 0
-    return shold_fullfill
+    return should_fullfill
 
 
 def _update_daily_extremes_after_trade(holding):
     symbol = holding['symbol']
     latest_price = holding['latest_price']
     stock_storage = _MEMORY_STORAGE.setdefault(symbol, {})
+    past_stock_storage = deepcopy(_MEMORY_STORAGE[symbol])
     if latest_price is not None:
         # calc highest
         for extreme_type in ['high', 'low']:
@@ -110,6 +110,9 @@ def _update_daily_extremes_after_trade(holding):
             stock_storage \
                 .setdefault(extreme_type, {}) \
                 .update({'price': extreme, 'after_trade': after_trade})
+        if not (past_stock_storage.get("high", {}).get('price') == stock_storage.get("high", {}).get('price')
+                and past_stock_storage.get("low", {}).get('price') == stock_storage.get("low", {}).get('price')):
+            logger.debug(_MEMORY_STORAGE[symbol], "daily_extreme")
     return deepcopy(_MEMORY_STORAGE[symbol])
 
 
@@ -142,7 +145,11 @@ def strategy_chase(holding):
                 quantity = min(quantity, available_quantity)
                 suggestion = {
                     'trade_type': trade.TradeType.sell,
-                    'quantity': quantity}
+                    'quantity': quantity,
+                    'reasons': "price is going down from daily high " + str(daily_high) + " to latest price " +
+                               str(latest_price) + ". The down ratio is above sell_price_trigger " +
+                               str(stock_config['sell_price_trigger'])}
+
     if not suggestion and daily_low is not None and latest_price is not None:
         # TODO: check available buying power before suggesting to buy
         if daily_low * stock_config['buy_price_trigger'] <= latest_price:
@@ -159,7 +166,11 @@ def strategy_chase(holding):
             if quantity > 0:
                 suggestion = {
                     'trade_type': trade.TradeType.buy,
-                    'quantity': quantity}
+                    'quantity': quantity,
+                    'reasons': "price is going up from daily low " + str(daily_low) + " to latest price " +
+                               str(latest_price) + ". The up ratio is above buy_price_trigger " +
+                               str(stock_config['buy_price_trigger'])}
+
     if _intend_to_trade(holding, suggestion):
         suggestion['extended_hours'] = stock_config['extended_hours']
         return suggestion

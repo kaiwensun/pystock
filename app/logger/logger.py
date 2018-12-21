@@ -1,17 +1,18 @@
 import datetime
 import pytz
 import os
-
+import pprint
 from config import settings
 
 _LAST_FILE_HOUR_ = None
 _LOG_FILE_NAME_ = None
 
 
-def _log(info):
+def _log(info, title):
     global _LAST_FILE_HOUR_
     global _LOG_FILE_NAME_
-    import pprint
+    if title:
+        pprint.pprint(title)
     pprint.pprint(info)
     timestamp = datetime.datetime.now(tz=pytz.timezone(settings.TIMEZONE))
     hour = timestamp.hour
@@ -30,10 +31,12 @@ def _log(info):
     logtext = pprint.pformat(info, indent=4)
     try:
         with open(_LOG_FILE_NAME_, "a") as myfile:
+            if title:
+                myfile.write(title + '\n')
             myfile.write(logtext + '\n')
     finally:
         myfile.close()
 
 
-def debug(info):
-    return _log(info)
+def debug(info, title=None):
+    return _log(info, title)
